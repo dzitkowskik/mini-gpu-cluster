@@ -1,0 +1,28 @@
+---
+- hosts: gpunodes
+  vars:
+    tempFolder: /tmp/tempFolder
+  sudo: yes
+  remote_user: vagrant
+  tasks:
+    # - name: set up interfaces
+      # copy: src=interfaces dest=/etc/network/interfaces owner=root group=root mode=644 backup=yes
+    - name: update system
+      apt: update_cache=yes
+      apt: upgrade=yes
+    - name: create temp folder for installs
+      file: path={{ tempFolder }} state=directory
+    - include: cuda.yml
+    - include: ldap.yml
+  handlers:
+    - name: restart nscd
+      service: name=nscd state=restarted
+    - name: restart server
+      shell: sleep 2 && shutdown -r now "Ansible updates triggered"
+      async: 1
+      poll: 0
+      sudo: true
+      ignore_errors: true
+    - name: wait for server to restart
+      local_action: wait_for host={{ inventory_hostname }} state=started delay=30 timeout=300
+      sudo: false

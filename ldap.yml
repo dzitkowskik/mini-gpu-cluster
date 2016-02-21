@@ -1,0 +1,39 @@
+---
+  - name: link shell
+    file: src=/bin/bash dest=/bin/mini state=link
+
+  - name: install required packages for ldap
+    apt: name={{ item }} state=installed
+    with_items:
+      - ldap-auth-client
+      - nscd
+  - name: add ldap to namespace resolver
+    shell: auth-client-config -t nss -p lac_ldap
+  - name: copy pamworkaround
+    copy: src=./pamworkaround.sh dest=/root/pamworkaround.sh
+  - name: copy my_mkhomedir
+    copy: src=./my_mkhomedir dest=/usr/share/pam-configs/my_mkhomedir
+  - name: update pam
+    shell: EDITOR=/root/pamworkaround.sh DEBIAN_FRONTEND=editor pam-auth-update
+  - name: configure ldap
+    copy: src=./ldap.conf dest=/etc/ldap.conf backup=yes
+    notify:
+      - restart nscd
+  - name: pam auto create home directories
+    lineinfile:
+      state: present 
+      insertbefore: BOF 
+      dest: /etc/pam.d/common-session
+      line: "session required        pam_mkhomedir.so umask=0022 skel=/etc/skel"
+      backup: yes
+  - name: create home2
+    file: path=/home2 state=directory
+  - name: bind home2 to home
+    shell: mount -o bind /home /home2
+  - name: add binding of home2 to rc.local
+    lineinfile: 
+      state: present 
+      insertbefore: "exit 0" 
+      dest: /etc/rc.local
+      line: "mount -o bind /home /home2" 
+      backup: yes

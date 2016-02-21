@@ -1,0 +1,20 @@
+---
+  - name: get CUDA repository
+    get_url: dest=/tmp url=http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1404/x86_64/cuda-repo-ubuntu1404_7.5-18_amd64.deb
+  - name: Check if cuda is installed
+    command: dpkg-query -W cuda
+    register: cuda_check_deb
+    failed_when: cuda_check_deb.rc > 1
+    changed_when: cuda_check_deb.rc == 1
+  - name: register CUDA repository
+    command: dpkg -i /tmp/cuda-repo-ubuntu1404_7.5-18_amd64.deb
+    when: cuda_check_deb.rc == 1
+  - name: install CUDA
+    apt: name=cuda state=installed update_cache=yes
+    when: cuda_check_deb.rc == 1
+  - name: configure CUDA
+    copy: src=./cuda.sh dest=/etc/profile.d/
+    when: cuda_check_deb.rc == 1
+    notify:
+      - restart server
+      - wait for server to restart
