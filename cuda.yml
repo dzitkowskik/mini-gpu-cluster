@@ -17,4 +17,3 @@
     when: cuda_check_deb.rc == 1
     notify:
       - restart server
-      - wait for server to restart

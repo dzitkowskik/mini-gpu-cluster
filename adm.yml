@@ -1,0 +1,10 @@
+---
+  - name: set up interfaces
+    copy: src=interfaces dest=/etc/network/interfaces owner=root group=root mode=644 backup=yes
+  - user: name=ddj comment="DDJ" groups=adm,sudo
+  - name: install basic tools
+    apt: name={{ item }} state=present
+      with_items:
+        - vim
+        - mc
+        - htop
